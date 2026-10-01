@@ -23,7 +23,7 @@
     <div class="container mx-auto px-4">
       <div class="flex justify-between items-center h-20">
         <div class="flex items-center space-x-3 cursor-pointer" onclick="switchPage('registration')">
-          <img src="https://i.ibb.co/vxYZTPhj/cropped-circle-image.png" class="w-12 h-12 bg-white rounded-full p-0.5 shadow-md">
+          <img src="https://img2.pic.in.th/cropped_circle_image4abd3ce094449065.png" class="w-12 h-12 bg-white rounded-full p-0.5 shadow-md">
           <div class="leading-tight">
             <p class="font-bold text-lg hidden md:block uppercase tracking-tight">สมาคมนักศึกษาเก่าสังคมสงเคราะห์ศาสตร์ มธ.</p>
             <p class="text-[10px] text-red-200 hidden md:block uppercase tracking-widest italic">TU Social Administration Alumni Association</p>
@@ -547,6 +547,19 @@
     });
 
 // --- 2. Address APIs (ซ่อมจุดที่ทำให้หน้าว่าง) ---
+// ✅ แก้ไข: แหล่งข้อมูล kongvut/thai-province-data เปลี่ยนโครงสร้าง JSON เมื่อ 20/9/2025
+// จากเดิม field ชื่อจังหวัด/อำเภอ/ตำบล เป็น "name_th" แบบ flat เปลี่ยนเป็น "name.th" แบบซ้อน object
+// โค้ดเดิมยังอ่าน .name_th (ตอนนี้เป็น undefined) ทำให้ .sort() throw error ทันทีตั้งแต่ตัวแรก
+// (undefined.localeCompare ใช้ไม่ได้) แล้วถูก catch เงียบๆ ผลคือ dropdown จังหวัดโหลดไม่มีตัวเลือกเลย
+// กดไม่ได้เหมือนไม่มีข้อมูล ทั้งที่ fetch ข้อมูลจริงสำเร็จ (HTTP 200) ทุกครั้ง
+// แก้โดยใช้ฟังก์ชัน _thName() รองรับทั้ง 2 รูปแบบ กันปัญหาซ้ำถ้าต้นทางเปลี่ยนโครงสร้างอีกในอนาคต
+function _thName(obj) {
+  if (!obj) return '';
+  if (typeof obj.name_th === 'string') return obj.name_th; // รูปแบบเก่า (flat)
+  if (obj.name && typeof obj.name.th === 'string') return obj.name.th; // รูปแบบใหม่ (nested)
+  return '';
+}
+
 async function loadAddressData() {
       try {
         const [resP, resD, resS] = await Promise.all([
@@ -558,8 +571,9 @@ async function loadAddressData() {
         allDistricts = await resD.json();
         allSubDistricts = await resS.json();
         const pSel = document.getElementById('addr_province');
-        allProvinces.sort((a,b) => a.name_th.localeCompare(b.name_th, 'th')).forEach(pv => {
-          let opt = document.createElement('option'); opt.value = pv.name_th; opt.text = pv.name_th; opt.dataset.id = pv.id; pSel.add(opt);
+        allProvinces.sort((a,b) => _thName(a).localeCompare(_thName(b), 'th')).forEach(pv => {
+          const name = _thName(pv);
+          let opt = document.createElement('option'); opt.value = name; opt.text = name; opt.dataset.id = pv.id; pSel.add(opt);
         });
         console.log("Address API: Loaded");
       } catch (e) { console.error(e); }
@@ -570,8 +584,9 @@ function updateAmphure() {
       const pId = pSel.options[pSel.selectedIndex]?.dataset.id;
       aSel.innerHTML = '<option value="">เลือกอำเภอ</option>'; tSel.innerHTML = '<option value="">เลือกตำบล</option>';
       if (!pId) return;
-      allDistricts.filter(d => d.province_id == pId).sort((a,b) => a.name_th.localeCompare(b.name_th, 'th')).forEach(d => {
-        let opt = document.createElement('option'); opt.value = d.name_th; opt.text = d.name_th; opt.dataset.id = d.id; aSel.add(opt);
+      allDistricts.filter(d => d.province_id == pId).sort((a,b) => _thName(a).localeCompare(_thName(b), 'th')).forEach(d => {
+        const name = _thName(d);
+        let opt = document.createElement('option'); opt.value = name; opt.text = name; opt.dataset.id = d.id; aSel.add(opt);
       });
       aSel.disabled = false; tSel.disabled = true;
     }
@@ -581,8 +596,9 @@ function updateAmphure() {
       const dId = aSel.options[aSel.selectedIndex]?.dataset.id;
       tSel.innerHTML = '<option value="">เลือกตำบล</option>';
       if (!dId) return;
-      allSubDistricts.filter(s => s.amphure_id == dId || s.district_id == dId).sort((a,b) => a.name_th.localeCompare(b.name_th, 'th')).forEach(s => {
-        let opt = document.createElement('option'); opt.value = s.name_th; opt.text = s.name_th; opt.dataset.zip = s.zip_code; tSel.add(opt);
+      allSubDistricts.filter(s => s.amphure_id == dId || s.district_id == dId).sort((a,b) => _thName(a).localeCompare(_thName(b), 'th')).forEach(s => {
+        const name = _thName(s);
+        let opt = document.createElement('option'); opt.value = name; opt.text = name; opt.dataset.zip = s.zip_code; tSel.add(opt);
       });
       tSel.disabled = false;
     }
