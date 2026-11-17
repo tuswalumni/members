@@ -457,7 +457,7 @@
     let selectedMember = null, selectedMemberForRenew = null;
     let pendingCache = [];
     // อ่านจาก query string ?page=... (ถ้ามี) ไม่งั้นใช้ค่า default ของแต่ละเว็บไซต์
-    const initialPage = (new URLSearchParams(window.location.search).get('page') || "").trim() || "member_info";
+    const initialPage = (new URLSearchParams(window.location.search).get('page') || "").trim() || "registration";
 
     window.addEventListener('DOMContentLoaded', async () => {
       try {
